@@ -1,114 +1,86 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const db = require('./db');
-require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 10000;
 
-// Requirements: Enable CORS so HTML can call API, and JSON
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend files
+// Serve frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-const PORT = process.env.PORT || 3000;
+// In-memory storage - Q6 requirement, no database needed
+let destinations = [];
+let nextId = 1;
 
-// ============================================
-// PART B - 5 ENDPOINTS - Q6 Travel Guide
-// ============================================
-
-// 1. GET /api/destinations -> List all records
-app.get('/api/destinations', async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM destinations ORDER BY id DESC");
-    res.json(rows); // Return JSON for all responses
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// GET all destinations
+app.get('/api/destinations', (req, res) => {
+  res.json(destinations);
 });
 
-// 2. GET /api/destinations/:id -> Get one record
-app.get('/api/destinations/:id', async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM destinations WHERE id =?", [req.params.id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Destination not found" });
-    }
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// GET one destination
+app.get('/api/destinations/:id', (req, res) => {
+  const dest = destinations.find(d => d.id == req.params.id);
+  if (!dest) return res.status(404).json({ error: 'Destination not found' });
+  res.json(dest);
 });
 
-// 3. POST /api/destinations -> Create a record
-app.post('/api/destinations', async (req, res) => {
+// POST - Add destination - FIXED, will not crash
+app.post('/api/destinations', (req, res) => {
   try {
-    const { name, country, city, category, description, price_per_night, rating, best_season } = req.body;
-
-    if (!name ||!country) {
-      return res.status(400).json({ error: "Name and country are required" });
+    console.log('POST body:', req.body);
+    const { name, description, category, country, imageUrl, rating, title, price_per_night, best_season } = req.body;
+    
+    if (!name && !title) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
-    const [result] = await db.query(
-      "INSERT INTO destinations (name, country, city, category, description, price_per_night, rating, best_season) VALUES (?,?,?,?,?,?,?,?)",
-      [name, country, city, category, description, price_per_night || 0, rating || 0, best_season]
-    );
+    const newDest = {
+      id: nextId++,
+      name: name || title || 'Unnamed',
+      title: title || name || 'Unnamed',
+      description: description || '',
+      category: category || 'General',
+      country: country || req.body.country || '',
+      imageUrl: imageUrl || 'https://via.placeholder.com/300',
+      rating: rating || 5,
+      price_per_night: price_per_night || 0,
+      best_season: best_season || '',
+      createdAt: new Date()
+    };
 
-    res.status(201).json({
-      id: result.insertId,
-      message: "Destination created successfully",
-      data: { id: result.insertId,...req.body }
-    });
+    destinations.push(newDest);
+    console.log('Saved! Total:', destinations.length);
+    res.status(201).json(newDest);
   } catch (err) {
+    console.error('POST ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 4. PUT /api/destinations/:id -> Update a record
-app.put('/api/destinations/:id', async (req, res) => {
-  try {
-    const { name, country, city, category, description, price_per_night, rating, best_season } = req.body;
-
-    const [result] = await db.query(
-      "UPDATE destinations SET name=?, country=?, city=?, category=?, description=?, price_per_night=?, rating=?, best_season=? WHERE id=?",
-      [name, country, city, category, description, price_per_night, rating, best_season, req.params.id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Destination not found" });
-    }
-
-    res.json({ message: "Destination updated successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// PUT - Update
+app.put('/api/destinations/:id', (req, res) => {
+  const index = destinations.findIndex(d => d.id == req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Not found' });
+  destinations[index] = { ...destinations[index], ...req.body, id: destinations[index].id };
+  res.json(destinations[index]);
 });
 
-// 5. DELETE /api/destinations/:id -> Delete a record
-app.delete('/api/destinations/:id', async (req, res) => {
-  try {
-    const [result] = await db.query("DELETE FROM destinations WHERE id =?", [req.params.id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Destination not found" });
-    }
-
-    res.json({ message: "Destination deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// DELETE
+app.delete('/api/destinations/:id', (req, res) => {
+  const initial = destinations.length;
+  destinations = destinations.filter(d => d.id != req.params.id);
+  if (destinations.length === initial) return res.status(404).json({ error: 'Not found' });
+  res.json({ message: 'Deleted successfully' });
 });
 
-// Start server
+// For frontend routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`✅ Q6 Travel Guide API running on http://localhost:${PORT}`);
-  console.log(`✅ Frontend: http://localhost:${PORT}`);
-  console.log(`✅ Endpoints:`);
-  console.log(` GET /api/destinations`);
-  console.log(` GET /api/destinations/:id`);
-  console.log(` POST /api/destinations`);
-  console.log(` PUT /api/destinations/:id`);
-  console.log(` DELETE /api/destinations/:id`);
+  console.log(`Travel Guide API running on port ${PORT}`);
 });
