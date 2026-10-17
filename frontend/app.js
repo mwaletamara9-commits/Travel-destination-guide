@@ -1,78 +1,45 @@
-const API = '/api/destinations';
-let editId = null;
+const API_URL = "/api/destinations";
 
-async function fetchAll() {
-  const res = await fetch(API);
-  const data = await res.json();
-  return Array.isArray(data) ? data : data.data || [];
+async function loadDestinations(){
+  const res = await fetch(API_URL);
+  const list = await res.json();
+  
+  document.querySelector("h2").textContent = `All Destinations (${list.length})`;
+  
+  const tbody = document.querySelector("tbody");
+  tbody.innerHTML = "";
+  list.forEach(d => {
+    tbody.innerHTML += `<tr><td>${d.id.slice(-4)}</td><td>${d.name}</td><td>${d.category}</td><td>${d.country}</td><td><button onclick="deleteDestination('${d.id}')">Delete</button></td></tr>`;
+  });
 }
 
-async function loadTable() {
-  const list = await fetchAll();
-  document.getElementById('count').textContent = list.length;
-  document.getElementById('tableBody').innerHTML = list.map(d => `
-    <tr>
-      <td>${d.id}</td>
-      <td><b>${d.name||d.title}</b><br><small>${d.country||''}</small></td>
-      <td><span class="badge">${d.category||''}</span></td>
-      <td class="actions">
-        <button class="btn-edit" onclick="editDestination(${d.id})">Edit</button>
-        <button class="btn-delete" onclick="deleteDestination(${d.id})">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-async function saveDestination() {
+async function addDestination(){
+  const inputs = document.querySelectorAll("input");
   const payload = {
-    name: document.getElementById('name').value,
-    description: document.getElementById('description').value,
-    category: document.getElementById('category').value,
-    country: document.getElementById('country').value,
-    image_url: document.getElementById('image_url').value,
-    title: document.getElementById('name').value,
-    image: document.getElementById('image_url').value
+    name: inputs[0].value,
+    category: inputs[1].value,
+    country: inputs[2].value,
+    imageUrl: inputs[3].value,
+    description: inputs[4].value
   };
-  if(!payload.name){ alert('Name required'); return; }
-
-  if(editId){
-    await fetch(`${API}/${editId}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  } else {
-    await fetch(API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  }
-  resetForm();
-  loadTable();
-}
-
-async function editDestination(id){
-  const res = await fetch(`${API}/${id}`);
-  const d = await res.json();
-  const item = d.data || d;
-  document.getElementById('name').value = item.name || item.title || '';
-  document.getElementById('description').value = item.description || '';
-  document.getElementById('category').value = item.category || '';
-  document.getElementById('country').value = item.country || '';
-  document.getElementById('image_url').value = item.image_url || item.image || '';
-  editId = id;
-  document.getElementById('formTitle').textContent = 'Edit Destination ID: ' + id;
-  document.getElementById('submitBtn').textContent = 'Update Destination';
-  document.getElementById('submitBtn').className = 'btn-update';
-  document.getElementById('cancelBtn').style.display = 'block';
+  
+  if(!payload.name) return alert("Type name first!");
+  
+  await fetch(API_URL, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+  
+  // THIS CLEARS BOXES - So you can type Zambia next!
+  inputs.forEach(inp => inp.value = "");
+  
+  loadDestinations();
 }
 
 async function deleteDestination(id){
-  if(!confirm('Delete this destination?')) return;
-  await fetch(`${API}/${id}`, {method:'DELETE'});
-  loadTable();
+  await fetch(`${API_URL}/${id}`, {method:"DELETE"});
+  loadDestinations();
 }
 
-function resetForm(){
-  editId = null;
-  ['name','description','category','country','image_url'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('formTitle').textContent = 'Add Destination';
-  document.getElementById('submitBtn').textContent = 'Add Destination';
-  document.getElementById('submitBtn').className = 'btn-add';
-  document.getElementById('cancelBtn').style.display='none';
-}
-
-loadTable();
+loadDestinations();
