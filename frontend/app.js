@@ -1,4 +1,4 @@
-const API = 'http://localhost:3000/api/destinations';
+const API = '/api/destinations';
 let editId = null;
 
 async function fetchAll() {
