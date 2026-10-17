@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Destination Guide - CRUD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#f5f7fb;padding:20px}
+h1{text-align:center;color:#0066ff;margin-bottom:20px}
+.container{max-width:1000px;margin:auto;display:grid;grid-template-columns:350px 1fr;gap:20px}
+@media(max-width:800px){.container{grid-template-columns:1fr}}
+.card{background:white;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.card h2{margin-bottom:15px;color:#333;font-size:1.2rem}
+input,textarea,select{width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ddd;border-radius:8px}
+button{padding:10px 15px;border:none;border-radius:8px;cursor:pointer;font-weight:bold}
+.btn-add{background:#0066ff;color:white;width:100%}
+.btn-update{background:#00b894;color:white;width:100%}
+.btn-cancel{background:#ddd;width:100%;margin-top:8px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #eee;font-size:.9rem}
+th{background:#f8f9ff}
+.actions button{margin:2px;padding:6px 10px;font-size:.8rem}
+.btn-edit{background:#fdcb6e}
+.btn-delete{background:#ff7675;color:white}
+.badge{background:#e6f0ff;color:#0066ff;padding:3px 8px;border-radius:10px;font-size:.75rem}
+</style>
+</head>
+<body>
+<h1>✈️ Travel Destination Guide - Q6</h1>
+<div class="container">
+<div class="card">
+<h2 id="formTitle">Add Destination</h2>
+<input id="name" placeholder="Destination Name (e.g. Paris)">
+<textarea id="description" placeholder="Description"></textarea>
+<input id="category" placeholder="Category (Beach, City, Nature)">
+<input id="country" placeholder="Country">
+<input id="image_url" placeholder="Image URL (optional)">
+<button id="submitBtn" class="btn-add" onclick="saveDestination()">Add Destination</button>
+<button id="cancelBtn" class="btn-cancel" onclick="resetForm()" style="display:none">Cancel Edit</button>
+</div>
+<div class="card">
+<h2>All Destinations (<span id="count">0</span>)</h2>
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Actions</th></tr></thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
